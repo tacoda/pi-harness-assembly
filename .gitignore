@@ -1,3 +1,5 @@
 .pi/audit.log
+scrape-output/
+research-notes/
 node_modules/
 .DS_Store

@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Case 4 — pi as a web-scraping harness (not a coding harness).
+#
+# Strategy F (launch profile), used to reframe pi's *domain* entirely.
+#
+#   --no-builtin-tools     drops read/write/edit/bash. The only tools left
+#                          are the extension tools (fetch_url, save_record).
+#   --system-prompt <txt>  replaces the coding-agent system prompt with a
+#                          scraping-agent one, scoped to *this launcher*
+#                          (so it doesn't leak into the other cases in
+#                          this repo).
+#   .pi/extensions/        contributes the scrape tools + /scrape command.
+#
+# Usage:
+#   ./bin/pi-scrape                          # interactive scraping session
+#   ./bin/pi-scrape https://example.com      # one-shot scrape of a URL
+#   ./bin/pi-scrape -p https://example.com   # non-interactive, print result
+
+set -euo pipefail
+
+here="$(cd "$(dirname "$0")/.." && pwd)"
+system_prompt="$(cat "$here/.pi/systems/scrape.md")"
+
+args=(--no-builtin-tools --system-prompt "$system_prompt" --name "scrape session")
+
+# Pass through -p / --print if the caller wants non-interactive mode.
+if [[ "${1:-}" == "-p" || "${1:-}" == "--print" ]]; then
+	args+=("$1")
+	shift
+fi
+
+if [[ $# -ge 1 ]]; then
+	# Treat the first positional arg as a scrape target.
+	target="$1"
+	shift
+	extra="$*"
+	exec pi "${args[@]}" "/scrape $target${extra:+ $extra}"
+else
+	exec pi "${args[@]}"
+fi

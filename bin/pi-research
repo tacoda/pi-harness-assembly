@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Case 5 — pi as a research-assistant harness.
+#
+# Strategy F (launch profile) + a replacement system prompt scoped to this
+# launcher only (so it doesn't collide with the coding cases in this repo
+# or with the scraping harness in bin/pi-scrape).
+#
+#   --no-builtin-tools     drops read/write/edit/bash. Only the research
+#                          extension tools remain.
+#   --system-prompt <txt>  replaces the coding-agent identity with a
+#                          research-assistant one.
+#   .pi/extensions/        contributes web_search, fetch_source, add_note,
+#                          list_notes, and the /research command.
+#
+# Usage:
+#   ./bin/pi-research
+#   ./bin/pi-research "what are the tradeoffs of vector vs bm25 retrieval?"
+
+set -euo pipefail
+
+here="$(cd "$(dirname "$0")/.." && pwd)"
+system_prompt="$(cat "$here/.pi/systems/research.md")"
+
+args=(--no-builtin-tools --system-prompt "$system_prompt" --name "research session")
+
+if [[ $# -ge 1 ]]; then
+	question="$*"
+	exec pi "${args[@]}" "/research $question"
+else
+	exec pi "${args[@]}"
+fi

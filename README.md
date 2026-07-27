@@ -4,28 +4,46 @@ A hypothesis-testing repo.
 
 ## Hypothesis
 
-There are two dominant patterns for teams adopting coding agents:
+There are two dominant patterns for teams adopting agents (coding or
+otherwise):
 
-1. **Stock agents** (Claude Code, Cursor, Codex CLI). Fast to adopt, but the
-   surface you can shape is small: system prompt, MCP servers, maybe a
-   permission list. Real workflow constraints (audit, compliance, opinionated
-   pipelines, seat-belted read-only modes) don't fit.
+1. **Stock agents** (Claude Code, Cursor, Codex CLI, ChatGPT desktop). Fast
+   to adopt, but the surface you can shape is small: system prompt, MCP
+   servers, maybe a permission list. Real workflow constraints (audit,
+   compliance, opinionated pipelines, seat-belted read-only modes, or
+   *a different domain entirely*) don't fit.
 
-2. **Full custom harnesses** (roll your own loop on top of an SDK, or fork an
-   OSS agent). Fits the workflow exactly, but the team now owns a product:
-   tool loop, session storage, TUI, model routing, compaction, etc. Most teams
-   who go here regret the maintenance surface within a quarter.
+2. **Full custom harnesses** (roll your own loop on top of an SDK, or fork
+   an OSS agent). Fits the workflow exactly, but the team now owns a
+   product: tool loop, session storage, TUI, model routing, provider auth,
+   compaction, streaming, cancellation, etc. Most teams who go here regret
+   the maintenance surface within a quarter.
 
-**The hypothesis:** [pi](https://pi.dev) is a viable *middle path*. It ships
-the harness (loop, TUI, sessions, compaction, model routing, providers), and
-exposes the parts teams actually want to customize — tools, tool-call gates,
-commands, skills, prompt templates, system prompt, launch flags — as
-first-class extension points that live inside your repo as normal TypeScript
-and Markdown.
+**The hypothesis:** [pi](https://pi.dev) is a viable *middle path*. It
+ships the harness — loop, TUI, sessions, compaction, model routing,
+provider auth — and exposes the parts teams actually want to customize —
+tools, tool-call gates, commands, skills, prompt templates, *system
+prompt*, launch flags — as first-class extension points that live inside
+your repo as normal TypeScript and Markdown.
 
-If the hypothesis holds, a team can get 80% of a custom harness for
-single-digit files of code, and can back out to stock pi at any time by
-deleting `.pi/`.
+Pi is marketed as a coding agent, but only two things about it are
+coding-specific: the four default tools (`read`, `write`, `edit`, `bash`)
+and the default system prompt. Both are replaceable — built-ins via
+`--no-builtin-tools`, system prompt via `--system-prompt "$(cat ...)"`
+per launcher (or globally via `.pi/SYSTEM.md`). Everything else is
+domain-agnostic terminal-agent infrastructure. So the hypothesis has two
+parts:
+
+- **(a)** For coding workflows, pi is a middle path between stock coding
+  agents and a full custom coding harness.
+- **(b)** For *non-coding* agent workflows (scraping, research
+  assistants, ops runbooks, data pipelines), pi is a middle path between
+  "bend a stock coding agent into it" and "build a terminal agent harness
+  from scratch."
+
+If the hypothesis holds, a team can get 80% of a custom harness — in
+either direction — for single-digit files of code, and can back out to
+stock pi at any time by deleting `.pi/`.
 
 ## The strategies
 
@@ -44,10 +62,15 @@ combination of these:
 The cost curve looks like: A ≪ B ≈ C ≪ D ≈ E ≪ F. A team can start at A and
 add strategies as pain shows up. None of them require forking pi.
 
-## The three test cases
+## The test cases
 
-Each case is a real workflow that a stock agent can't safely do and a custom
-harness is overkill for. Each mixes 2–3 of the strategies above.
+Cases 1–3 test hypothesis (a): pi as middle path for *coding* workflows.
+Cases 4 and 5 test hypothesis (b): pi repurposed as a non-coding harness,
+in two distinct domains (scraping and research), to check that (b) isn't
+just one lucky fit.
+
+Each case is a real workflow that a stock agent can't safely do and a full
+custom harness is overkill for. Each mixes 2–3 of the strategies above.
 
 ### Case 1 — Regulated shop (compliance guardrails)
 
@@ -74,6 +97,38 @@ read, grep, list — nothing else. Follows a standardized review rubric.
 **Strategies used:** F (launch profile) + C (skill) + B (prompt template).
 **Files:** [`bin/pi-review`](bin/pi-review), [`.pi/skills/notebook-review/SKILL.md`](.pi/skills/notebook-review/SKILL.md), [`.pi/prompts/review-notebook.md`](.pi/prompts/review-notebook.md).
 
+### Case 4 — Non-coding domain (web scraping harness)
+
+**Team:** anyone who needs a scraping agent and doesn't want to build one
+from scratch or bend Claude Code into pretending to be one.
+**Need:** pi is no longer a coding agent. `read`/`write`/`edit`/`bash` are
+gone. In their place: `fetch_url` and `save_record`. The system prompt
+describes a scraping agent, not a coding one. A `/scrape` command kicks off
+a job. A skill contains the extraction playbook.
+**Strategies used:** E (custom tools + command) + C (skill) + F (launch
+profile with `--no-builtin-tools` + per-launcher `--system-prompt`).
+**Files:** [`.pi/extensions/scrape.ts`](.pi/extensions/scrape.ts), [`.pi/systems/scrape.md`](.pi/systems/scrape.md), [`.pi/skills/scrape-playbook/SKILL.md`](.pi/skills/scrape-playbook/SKILL.md), [`bin/pi-scrape`](bin/pi-scrape).
+
+### Case 5 — Non-coding domain (research assistant harness)
+
+**Team:** analysts, researchers, anyone who wants an agent that finds
+sources, reads them, and takes cited notes — not an agent that writes
+code about the topic.
+**Need:** four domain tools — `web_search`, `fetch_source`, `add_note`,
+`list_notes`. Every claim gets a citation to a URL the agent actually
+fetched. Notes accumulate as Markdown under `research-notes/<topic>.md`
+across sessions. Coding tools are disabled entirely.
+**Strategies used:** E + C + F, same as Case 4, but the *domain* is
+different (synthesis with citations, not row extraction). The point of
+having both 4 and 5 is to check that non-coding fit isn't a coincidence.
+**Files:** [`.pi/extensions/research.ts`](.pi/extensions/research.ts), [`.pi/systems/research.md`](.pi/systems/research.md), [`.pi/skills/research-playbook/SKILL.md`](.pi/skills/research-playbook/SKILL.md), [`bin/pi-research`](bin/pi-research).
+
+Cases 4 and 5 are the hardest tests. If pi is genuinely a general
+terminal-agent harness rather than a coding-specific one, they should
+feel no more awkward than Cases 1–3 — and reusing the same six
+strategies for two unrelated domains should produce structurally similar
+results.
+
 ## How to run the test
 
 Install pi:
@@ -99,6 +154,17 @@ tail -f .pi/audit.log     # in another shell
 
 # Case 3: launch the read-only reviewer profile
 ./bin/pi-review path/to/notebook.ipynb
+
+# Case 4: launch pi as a scraping agent (no coding tools)
+./bin/pi-scrape
+> /scrape https://news.ycombinator.com/ get the top 30 stories
+# or one-shot:
+./bin/pi-scrape https://news.ycombinator.com/ "top 30 stories"
+ls scrape-output/
+
+# Case 5: launch pi as a research assistant (no coding tools)
+./bin/pi-research "what are the tradeoffs of vector vs bm25 retrieval?"
+ls research-notes/
 ```
 
 ## What this repo is trying to falsify
@@ -110,4 +176,8 @@ The hypothesis fails if any of these are true:
 - The extension surface can't express the constraint (e.g. can't actually
   block a tool call, can't actually add a command).
 
-The repo below is the evidence. Each case is <100 lines of code + config.
+The repo below is the evidence. Each case is <100–200 lines of code +
+config. Cases 4 and 5 are the sharpest tests: if pi can host a scraping
+agent *and* a research assistant without feeling like a hack, and the
+same six-strategy taxonomy applies to both, the "middle path" claim
+generalizes past coding.
