@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Case 3 — read-only notebook / script reviewer launch profile.
+#
+# Strategy F (launch profile). This is the "custom harness" in the smallest
+# possible form: a shell script that starts pi with a specific tool
+# allowlist, a specific prompt template, and a specific skill preloaded.
+#
+# Usage:
+#   ./bin/pi-review path/to/notebook.ipynb [more files...]
+#
+# What this locks down:
+#   - Only read/grep/find/ls tools are enabled. No write, no edit, no bash.
+#   - The review-notebook prompt template is expanded as the first turn.
+#   - The notebook-review skill is loaded, so the model follows the rubric.
+#   - The session is named so it shows up cleanly in `pi -r` later.
+
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+	echo "usage: pi-review <file> [file...]" >&2
+	exit 2
+fi
+
+# Build @-prefixed args so pi attaches the files to the initial prompt.
+files=()
+for f in "$@"; do
+	if [[ ! -f "$f" ]]; then
+		echo "pi-review: not a file: $f" >&2
+		exit 2
+	fi
+	files+=("@$f")
+done
+
+exec pi \
+	--tools read,grep,find,ls \
+	--name "notebook review: $(basename "$1")" \
+	"${files[@]}" \
+	"/review-notebook"
