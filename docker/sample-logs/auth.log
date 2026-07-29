@@ -1,0 +1,10 @@
+2026-07-29T13:55:02Z INFO  auth  login user=42 ok mfa=totp
+2026-07-29T13:56:47Z INFO  auth  login user=91 ok mfa=totp
+2026-07-29T13:59:03Z WARN  auth  login user=? ip=203.0.113.44 failure="unknown user" attempt=1
+2026-07-29T13:59:05Z WARN  auth  login user=? ip=203.0.113.44 failure="unknown user" attempt=2
+2026-07-29T13:59:07Z WARN  auth  login user=? ip=203.0.113.44 failure="unknown user" attempt=3
+2026-07-29T13:59:09Z WARN  auth  login user=admin ip=203.0.113.44 failure="bad password" attempt=4
+2026-07-29T13:59:11Z WARN  auth  login user=admin ip=203.0.113.44 failure="bad password" attempt=5
+2026-07-29T13:59:13Z ERROR auth  login user=admin ip=203.0.113.44 failure="bad password" attempt=6 rate-limited
+2026-07-29T13:59:14Z INFO  auth  ip 203.0.113.44 banned duration=15m reason="brute force"
+2026-07-29T14:04:10Z INFO  auth  login user=201 ok mfa=totp

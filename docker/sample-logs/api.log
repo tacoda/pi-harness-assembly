@@ -1,0 +1,12 @@
+2026-07-29T13:58:11Z INFO  api  request GET /v1/orders/123 user=42 status=200 dur=41ms
+2026-07-29T13:58:14Z INFO  api  request GET /v1/orders/124 user=42 status=200 dur=38ms
+2026-07-29T14:01:02Z WARN  api  upstream=payments latency=812ms threshold=500ms
+2026-07-29T14:01:47Z ERROR api  request POST /v1/checkout user=91 status=502 upstream=payments err="connection refused"
+2026-07-29T14:01:49Z ERROR api  request POST /v1/checkout user=104 status=502 upstream=payments err="connection refused"
+2026-07-29T14:01:52Z ERROR api  request POST /v1/checkout user=118 status=502 upstream=payments err="connection refused"
+2026-07-29T14:02:08Z ERROR api  request POST /v1/checkout user=133 status=504 upstream=payments err="deadline exceeded (2000ms)"
+2026-07-29T14:02:14Z ERROR api  request POST /v1/checkout user=140 status=504 upstream=payments err="deadline exceeded (2000ms)"
+2026-07-29T14:03:00Z WARN  api  circuit-breaker=payments state=open
+2026-07-29T14:05:31Z INFO  api  circuit-breaker=payments state=half-open probes=3
+2026-07-29T14:05:34Z INFO  api  circuit-breaker=payments state=closed
+2026-07-29T14:05:41Z INFO  api  request POST /v1/checkout user=201 status=200 dur=88ms

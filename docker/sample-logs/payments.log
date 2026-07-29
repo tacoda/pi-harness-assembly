@@ -1,0 +1,17 @@
+2026-07-29T13:57:44Z INFO  payments  worker-3 processed txn=t_9a12 ok
+2026-07-29T13:58:22Z INFO  payments  worker-1 processed txn=t_9a13 ok
+2026-07-29T14:00:58Z WARN  payments  db-pool utilization=0.94 waiters=17
+2026-07-29T14:01:11Z ERROR payments  worker-4 panic: runtime error: connection pool exhausted
+2026-07-29T14:01:11Z ERROR payments  goroutine 812 [running]:
+2026-07-29T14:01:11Z ERROR payments  payments/db.(*Pool).Acquire(0xc0001a4000, ...)
+2026-07-29T14:01:11Z ERROR payments  	/app/db/pool.go:142 +0x2a4
+2026-07-29T14:01:11Z ERROR payments  payments/handlers.Charge(0xc00023a000, ...)
+2026-07-29T14:01:11Z ERROR payments  	/app/handlers/charge.go:58 +0x91
+2026-07-29T14:01:12Z ERROR payments  worker-2 panic: runtime error: connection pool exhausted
+2026-07-29T14:01:14Z FATAL payments  supervisor: 3 workers down within 5s, entering degraded mode
+2026-07-29T14:02:31Z INFO  payments  db-pool resized 20 -> 60
+2026-07-29T14:03:02Z INFO  payments  worker-1 restarted
+2026-07-29T14:03:02Z INFO  payments  worker-2 restarted
+2026-07-29T14:03:02Z INFO  payments  worker-3 restarted
+2026-07-29T14:03:02Z INFO  payments  worker-4 restarted
+2026-07-29T14:05:12Z INFO  payments  db-pool utilization=0.31 waiters=0

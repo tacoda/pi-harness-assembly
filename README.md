@@ -65,9 +65,10 @@ add strategies as pain shows up. None of them require forking pi.
 ## The test cases
 
 Cases 1–3 test hypothesis (a): pi as middle path for *coding* workflows.
-Cases 4 and 5 test hypothesis (b): pi repurposed as a non-coding harness,
-in two distinct domains (scraping and research), to check that (b) isn't
-just one lucky fit.
+Cases 4, 5, and 6 test hypothesis (b): pi repurposed as a non-coding
+harness, in three distinct domains (scraping, research, log triage) — the
+third one containerized — to check that (b) isn't just one lucky fit and
+that the same extension surfaces survive being wrapped in Docker.
 
 Each case is a real workflow that a stock agent can't safely do and a full
 custom harness is overkill for. Each mixes 2–3 of the strategies above.
@@ -123,11 +124,31 @@ different (synthesis with citations, not row extraction). The point of
 having both 4 and 5 is to check that non-coding fit isn't a coincidence.
 **Files:** [`.pi/extensions/research.ts`](.pi/extensions/research.ts), [`.pi/systems/research.md`](.pi/systems/research.md), [`.pi/skills/research-playbook/SKILL.md`](.pi/skills/research-playbook/SKILL.md), [`bin/pi-research`](bin/pi-research).
 
-Cases 4 and 5 are the hardest tests. If pi is genuinely a general
+### Case 6 — Non-coding domain in a container (log triage, isolated)
+
+**Team:** anyone running an agent against untrusted input — a partner
+team's outage bundle, a customer support export, a forensic snapshot.
+**Need:** same non-coding reframe as Cases 4 and 5, but the agent must
+not see the host filesystem. The whole harness runs inside Docker.
+`/logs` is mounted read-only, `triage-output/` is the only writable
+path, the container is `--read-only` + `--network none` + non-root, and
+`--no-builtin-tools` strips `read`/`write`/`edit`/`bash` at the pi
+layer. Two belts: OS isolation on the outside, tool-level path guards on
+the inside. The extension registers `list_logs`, `read_log`, `grep_logs`,
+`save_incident`, and a `/triage` command.
+**Strategies used:** E + C + B + F, same as Cases 4 and 5, plus Docker
+as an *outer* wrapper around the launch profile — no new pi surface
+required.
+**Files:** [`.pi/extensions/triage.ts`](.pi/extensions/triage.ts), [`.pi/systems/triage.md`](.pi/systems/triage.md), [`.pi/skills/triage-playbook/SKILL.md`](.pi/skills/triage-playbook/SKILL.md), [`.pi/prompts/triage.md`](.pi/prompts/triage.md), [`bin/pi-triage`](bin/pi-triage), [`docker/Dockerfile`](docker/Dockerfile), [`docker/README.md`](docker/README.md).
+
+Cases 4, 5, and 6 are the hardest tests. If pi is genuinely a general
 terminal-agent harness rather than a coding-specific one, they should
 feel no more awkward than Cases 1–3 — and reusing the same six
-strategies for two unrelated domains should produce structurally similar
-results.
+strategies for three unrelated domains, one of them containerized,
+should produce structurally similar results. Case 6 also tests a
+secondary claim: because pi's extension surface is just files in
+`.pi/`, dropping the whole harness into a container is a Dockerfile,
+not a rewrite.
 
 ## How to run the test
 
@@ -165,6 +186,13 @@ ls scrape-output/
 # Case 5: launch pi as a research assistant (no coding tools)
 ./bin/pi-research "what are the tradeoffs of vector vs bm25 retrieval?"
 ls research-notes/
+
+# Case 6: launch pi as a log-triage agent, isolated in Docker.
+# First run builds the image (docker/Dockerfile). Subsequent runs reuse it.
+./bin/pi-triage                            # interactive over docker/sample-logs
+./bin/pi-triage /path/to/some/logs         # different log corpus
+./bin/pi-triage -- "focus on auth service" # one-shot with a focus
+cat triage-output/incidents.jsonl
 ```
 
 ## What this repo is trying to falsify

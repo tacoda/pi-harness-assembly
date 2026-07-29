@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# Case 6 — pi as a log-triage harness, isolated in Docker.
+#
+# Strategy F (launch profile) + strategy A (repo context) + Docker as the
+# outer isolation belt. Compare with bin/pi-scrape and bin/pi-research:
+# same shape — replace built-in tools, replace system prompt, register
+# domain tools — but here the whole thing runs in a container so the
+# agent can't see the host filesystem.
+#
+# Two belts:
+#   1. Docker mounts /logs read-only and nothing else of the host.
+#      Root filesystem is read-only; only /tmp (tmpfs) and the mounted
+#      /work/triage-output are writable. Non-root user.
+#   2. --no-builtin-tools drops read/write/edit/bash; the extension's
+#      path guard refuses reads outside $TRIAGE_LOGS_DIR.
+#
+# Usage:
+#   ./bin/pi-triage                          # interactive over docker/sample-logs
+#   ./bin/pi-triage /path/to/logs            # different log corpus
+#   ./bin/pi-triage -- "auth service only"   # one-shot with a focus
+#   ./bin/pi-triage /path/to/logs -- "..."   # both
+
+set -euo pipefail
+
+here="$(cd "$(dirname "$0")/.." && pwd)"
+image="${PI_TRIAGE_IMAGE:-pi-triage}"
+
+# Parse args: [logs_dir] [-- focus...]
+logs_dir="$here/docker/sample-logs"
+focus=""
+if [[ $# -gt 0 && "$1" != "--" ]]; then
+	logs_dir="$1"
+	shift
+fi
+if [[ ${1:-} == "--" ]]; then
+	shift
+	focus="$*"
+fi
+
+if [[ ! -d "$logs_dir" ]]; then
+	echo "pi-triage: logs directory not found: $logs_dir" >&2
+	exit 2
+fi
+logs_dir="$(cd "$logs_dir" && pwd)"
+
+# Ensure the image exists. Build on first run.
+if ! docker image inspect "$image" >/dev/null 2>&1; then
+	echo "pi-triage: image '$image' not found; building..." >&2
+	docker build -t "$image" "$here/docker"
+fi
+
+# Ensure the output dir exists on the host with the right ownership.
+# The container user is UID 10001; matching it here avoids write errors.
+mkdir -p "$here/triage-output"
+
+system_prompt="$(cat "$here/.pi/systems/triage.md")"
+
+docker_args=(
+	run --rm -i
+	--network none
+	--read-only
+	--tmpfs /tmp:rw,size=64m
+	--cap-drop ALL
+	--security-opt no-new-privileges
+	-v "$here":/work
+	-v "$logs_dir":/logs:ro
+	-e ANTHROPIC_API_KEY
+	-e GOOGLE_API_KEY
+	-e PI_QUIET_STARTUP=1
+	-e TRIAGE_LOGS_DIR=/logs
+)
+
+# Only allocate a TTY when stdout is one. Lets `-p` / one-shot work in CI.
+if [[ -t 1 ]]; then
+	docker_args+=(-t)
+fi
+
+pi_args=(
+	--no-builtin-tools
+	--system-prompt "$system_prompt"
+	--name "triage session"
+)
+
+if [[ -n "$focus" ]]; then
+	pi_args+=(--print "/triage $focus")
+fi
+
+exec docker "${docker_args[@]}" "$image" "${pi_args[@]}"

@@ -1,12 +1,3 @@
 {
-  "$comment": "Project-scoped pi settings. Loaded after user trusts the project on first run.",
-  "extensions": {
-    "enabled": true
-  },
-  "skills": {
-    "enabled": true
-  },
-  "promptTemplates": {
-    "enabled": true
-  }
+  "$comment": "Project-scoped pi settings. Loaded after user trusts the project on first run."
 }

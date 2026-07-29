@@ -1,5 +1,6 @@
 .pi/audit.log
 scrape-output/
 research-notes/
+triage-output/
 node_modules/
 .DS_Store
