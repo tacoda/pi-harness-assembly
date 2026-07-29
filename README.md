@@ -141,6 +141,24 @@ as an *outer* wrapper around the launch profile — no new pi surface
 required.
 **Files:** [`.pi/extensions/triage.ts`](.pi/extensions/triage.ts), [`.pi/systems/triage.md`](.pi/systems/triage.md), [`.pi/skills/triage-playbook/SKILL.md`](.pi/skills/triage-playbook/SKILL.md), [`.pi/prompts/triage.md`](.pi/prompts/triage.md), [`bin/pi-triage`](bin/pi-triage), [`docker/Dockerfile`](docker/Dockerfile), [`docker/README.md`](docker/README.md).
 
+### Case 7 — Serving a pi harness from a VPS (nginx reverse proxy)
+
+**Team:** anyone who wants teammates to use a pi harness from a browser
+instead of an SSH session.
+**Need:** take the Case 6 container and put a URL in front of it. TLS,
+HTTP basic auth, one public entry point, no direct exposure of the
+harness container. The harness code doesn't change; the deployment
+shape does.
+**Shape:** `nginx (:443, TLS + basic auth) → ttyd (browser-terminal
+shim) → bin/pi-triage → docker run pi-triage → pi + extension`. Two
+new belts (nginx, ttyd) stacked on top of Case 6's three (container
+isolation, `--no-builtin-tools`, tool-level path guards).
+**Strategies used:** none new on the pi side — this case is the
+negative result that matters. Serving a pi harness is a reverse-proxy
+problem, not a pi problem. Once the harness is `docker run`-able, the
+rest is stock VPS ops.
+**Files:** [`deploy/compose.yml`](deploy/compose.yml), [`deploy/nginx/pi-triage.conf`](deploy/nginx/pi-triage.conf), [`deploy/README.md`](deploy/README.md).
+
 Cases 4, 5, and 6 are the hardest tests. If pi is genuinely a general
 terminal-agent harness rather than a coding-specific one, they should
 feel no more awkward than Cases 1–3 — and reusing the same six
@@ -193,6 +211,14 @@ ls research-notes/
 ./bin/pi-triage /path/to/some/logs         # different log corpus
 ./bin/pi-triage -- "focus on auth service" # one-shot with a focus
 cat triage-output/incidents.jsonl
+
+# Case 7: serve the Case 6 harness from a VPS behind nginx. See
+# deploy/README.md for the full first-time setup (certs, htpasswd, .env).
+docker build -t pi-triage docker/
+htpasswd -c deploy/nginx/htpasswd alice
+# ...create deploy/.env with TTYD_BASIC_AUTH + provider key...
+docker compose -f deploy/compose.yml --env-file deploy/.env up -d
+# Browser → https://triage.example.com → basic-auth → in-browser terminal.
 ```
 
 ## What this repo is trying to falsify

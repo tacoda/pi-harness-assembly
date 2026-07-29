@@ -2,5 +2,8 @@
 scrape-output/
 research-notes/
 triage-output/
+deploy/nginx/htpasswd
+deploy/nginx/webroot/
+deploy/.env
 node_modules/
 .DS_Store

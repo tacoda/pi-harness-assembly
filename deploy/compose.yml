@@ -1,0 +1,82 @@
+# Case 7 — Serve a pi harness from a VPS behind nginx.
+#
+# This does NOT introduce a new harness. It takes the existing Case 6
+# triage container (docker/Dockerfile) and puts two things in front of it:
+#
+#   1. ttyd  — a tiny process that exposes a program's TTY over WebSocket
+#              so a browser can attach to it as a terminal.
+#   2. nginx — TLS termination, HTTP basic auth, WebSocket upgrade, and a
+#              single public entry point on :443.
+#
+# The result: `https://triage.example.com` drops an authenticated user
+# into an in-browser terminal running `bin/pi-triage`, which itself is
+# `docker run`-ing the Case 6 image with the same isolation flags. All
+# three layers stack:
+#
+#   nginx (TLS + basic auth)
+#     → ttyd  (browser-terminal shim, no direct network exposure)
+#       → docker run pi-triage (--read-only, --network none, non-root)
+#         → pi with --no-builtin-tools
+#           → extension tools with path guards
+#
+# That's five belts, of which only the outer two are new here.
+#
+# Deploy target: any small Linux VPS with docker + docker compose.
+# See deploy/README.md for the end-to-end setup.
+
+services:
+  ttyd:
+    # ttyd bakes a webserver around an arbitrary command. We hand it the
+    # host-side bin/pi-triage script, which in turn runs a nested `docker
+    # run` for the actual triage container. That means this service
+    # needs access to the host docker socket — see deploy/README.md for
+    # the tradeoff and the alternative (running pi directly here without
+    # nested Docker).
+    image: tsl0922/ttyd:1.7.7
+    restart: unless-stopped
+    command:
+      - ttyd
+      - --writable
+      - --port
+      - "7681"
+      - --check-origin
+      # ttyd runs behind nginx which already does auth; we still pass
+      # -c so a direct hit on :7681 (if ever exposed) still needs creds.
+      - -c
+      - "${TTYD_BASIC_AUTH:?set TTYD_BASIC_AUTH=user:pass in deploy/.env}"
+      - /work/bin/pi-triage
+    working_dir: /work
+    volumes:
+      - ../:/work
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - ANTHROPIC_API_KEY
+      - GOOGLE_API_KEY
+    # Not published to the host — only nginx can reach it, over the
+    # internal compose network.
+    expose:
+      - "7681"
+    networks:
+      - edge
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - ttyd
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/pi-triage.conf:/etc/nginx/conf.d/pi-triage.conf:ro
+      - ./nginx/htpasswd:/etc/nginx/htpasswd:ro
+      # Certificates: mount whatever your issuer produced. Defaults
+      # here match certbot's `--webroot` output on the host.
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./nginx/webroot:/var/www/certbot:ro
+    networks:
+      - edge
+
+networks:
+  edge:
+    driver: bridge
