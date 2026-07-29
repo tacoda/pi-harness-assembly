@@ -1,3 +1,8 @@
+---
+name: scrape-playbook
+description: Web scraping loop (probe → fetch → identify entity → extract with `save_record` → paginate) using `fetch_url` and `save_record`. Load when the user asks to scrape, extract, or collect data from a web page, or when `/scrape` is invoked.
+---
+
 # scrape-playbook
 
 Load this skill whenever the user asks to scrape, extract, or collect data

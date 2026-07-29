@@ -1,3 +1,8 @@
+---
+name: deploy-runbook
+description: Canonical four-stage deploy pipeline (preflight → canary → verify → promote) using the `deploy_service` tool. Load when the user asks to deploy, ship, release, roll out, or promote a service, or when `/deploy` is invoked.
+---
+
 # deploy-runbook
 
 Use this skill when the user asks to deploy, ship, release, roll out, or

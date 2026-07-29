@@ -1,3 +1,8 @@
+---
+name: research-playbook
+description: Multi-step research loop (decompose → search → fetch → cited notes → synthesize) using `web_search`, `fetch_source`, `add_note`, `list_notes`. Load when the user asks a research question, says "look into" something, or invokes `/research`.
+---
+
 # research-playbook
 
 Load this skill when the user asks a research question, asks you to "look

@@ -1,3 +1,8 @@
+---
+name: notebook-review
+description: Read-only rubric-based review of a Jupyter notebook, data-science script, or analysis pipeline. Produces a structured Markdown critique. Load when the user asks to review a notebook/analysis, or when launched via `bin/pi-review`.
+---
+
 # notebook-review
 
 Use this skill when the user asks for a review of a Jupyter notebook, a
